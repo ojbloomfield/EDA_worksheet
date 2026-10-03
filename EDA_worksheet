@@ -1,0 +1,361 @@
+---
+title: "Worksheet: EDA Worksheet"
+subtitle: "STT 2860 Intro to Data Mgmt & Visualization"
+author: "liv_bloomfield"
+date: "`r format(Sys.time(), '%A, %B %d, %Y @ %I:%M %p')`"
+output:
+  html_document:
+    theme: yeti
+    highlight: textmate
+    toc: true
+    toc_depth: 4
+---
+
+<hr>
+
+```{r globaloptions, include = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  comment = NA
+)
+```
+
+## How We’ll Work Today (Groups + Individual Submission)
+
+* **Use the same groups as Project 1.**
+* You are encouraged to **talk, compare code, and help each other debug**, but **each student must submit their own completed worksheet to GitHub** (your own repo).
+* If you get stuck, follow this order:
+
+  1. read the error carefully
+  2. ask your group
+  3. ask me
+
+---
+
+## GitHub Workflow Reminder (Do This All Class)
+
+**Before you start**
+
+* Pull the most recent version (if needed).
+* Open the `.Rmd`, knit once to make sure it runs.
+
+**During work**
+
+* Work in small steps.
+* After each checkpoint section: **Knit → Commit → Push**
+
+---
+
+## Learning Notes (You will write as you go)
+
+* **One thing I learned today:** I learned the difference between `geom_bar()` and `geom_col()`. `geom_bar()` can count observations automatically, while `geom_col()` uses values that have already been calculated.
+* **One thing that confused me at first but makes sense now:** I was confused about why we needed to use `count()` before `geom_col()`, but now I understand that we have to create the bar heights ourselves first.
+* **One ggplot trick I want to remember:** I want to remember that `reorder()` can arrange categories based on another variable, which makes barplots easier to read.
+
+---
+
+# Packages Used
+
+```{r packages}
+# load all packages used here
+library(tidyverse)
+library(nycflights13)
+library(skimr)
+```
+
+---
+
+# Datasets Used
+
+## Popular Kids
+
+The dataset `popular.csv` and you can read about it [HERE](https://stat-jet-asu.github.io/Datasets/InstructorDescriptions/popular.html).
+
+```{r kids-read}
+# import the dataset from the web URL
+kids <- read_csv("https://aokine.github.io/Data/popular.csv")
+```
+
+```{r kids-explore}
+# explore the dataset
+# Use glimpse()
+# Use skim()
+glimpse(kids)
+skim(kids)
+```
+
+## Semmelweis Data
+
+The dataset `semmelweisannualbyclinic.csv` and you can read about Dr. Ignaz Semmelweis [HERE](https://www.pbs.org/newshour/health/ignaz-semmelweis-doctor-prescribed-hand-washing). This dataset contains annual observations for two different clinics that led him to implement his handwashing experiment.
+
+```{r semm-read}
+semm <- read_csv("https://aokine.github.io/Data/semmelweisannualbyclinic.csv")
+```
+
+```{r semm-explore}
+# explore the dataset
+glimpse(semm)
+skim(semm)
+```
+
+---
+
+## Checkpoint 1 (Setup + Datasets)
+
+**Checkpoint task:** Knit your document. If it works, **commit and push** with:
+
+> `worksheet-eda: checkpoint-1 (setup + datasets)`
+
+---
+
+# NFL Players 2016 Dataset
+
+Description: [NFL Players 2016](https://stat-jet-asu.github.io/Datasets/InstructorDescriptions/NFLplayers2016.html)
+
+## Load the dataset
+
+```{r nfl-read}
+NFL <- read_csv("https://aokine.github.io/Data/NFLplayers2016.csv")
+```
+
+## Explore the structure with `skim()`
+
+```{r nfl-skim}
+# Use skim()
+skim(NFL)
+```
+
+---
+
+# Barplots with `geom_bar()`
+
+For `geom_bar()`, we input an `x` variable and the geometry counts how many of each value occurs in that variable, and that becomes the "y" value for the height of the bars.
+
+## Barplot: Position Groups
+
+Use `x = PositionGrp`.
+
+```{r bar-1}
+# Create barplot of PositionGrp
+ggplot(NFL, aes(x = PositionGrp)) +
+  geom_bar()
+```
+
+### Choose-your-own mini task (pick ONE)
+
+1. Change bar color and outline (`fill =`, `color =`) **OR**
+2. Flip coordinates (`coord_flip()`) **OR**
+3. Make the bars show proportions instead of counts (hint: `aes(y = after_stat(count/sum(count)))`)
+
+I chose option 2, flipping the coordinates.
+
+```{r bar-1-choice}
+ggplot(NFL, aes(x = PositionGrp)) +
+  geom_bar() +
+  coord_flip()
+```
+
+---
+
+## Fixing category names: Map `PositionGrp` to the y aesthetic
+
+Make `PositionGrp` go on the **y-axis** so labels are easier to read.
+
+```{r bar-2}
+# Make horizontal barplot
+ggplot(NFL, aes(y = PositionGrp)) +
+  geom_bar()
+```
+
+---
+
+## Barplot for Two Variables
+
+Use `PositionGrp` and `Side` as the two variables. Use color/fill to separate groups.
+
+```{r bar-3}
+# Add fill = Side
+ggplot(NFL, aes(x = PositionGrp, fill = Side)) +
+  geom_bar()
+```
+
+### Quick interpretation (1–2 sentences)
+
+In plain language, what does this plot suggest about how offense/defense/special teams are distributed across position groups?
+
+**Answer:** The plot shows that position groups are divided based on whether players are mainly on offense, defense, or special teams. Some position groups have a lot more players than others, so the distribution is not even across the different groups.
+
+---
+
+## Checkpoint 2 (Skim + geom_bar)
+
+**Checkpoint task:** Knit your document. If it works, **commit and push** with:
+
+> `worksheet-eda: checkpoint-2 (skim + first barplots)`
+
+---
+
+# Barplots with `geom_col()`
+
+For `geom_col()`, we input an `x` variable and we input a `y` variable that specifies bar heights. That means we usually **summarize first**.
+
+## Count the Position Groups
+
+```{r col-1}
+# Create summarized dataset using count()
+position_counts <- NFL %>%
+  count(PositionGrp)
+
+position_counts
+```
+
+## Plot counts with `geom_col()`
+
+```{r col-2}
+# Plot using geom_col()
+ggplot(position_counts, aes(x = PositionGrp, y = n)) +
+  geom_col()
+```
+
+---
+
+## Rearrange the bars in order using `reorder()`
+
+Change the order of the categories according to their counts (largest to smallest).
+
+```{r col-3}
+# Use reorder() to sort bars
+ggplot(position_counts, aes(x = reorder(PositionGrp, -n), y = n)) +
+  geom_col() +
+  labs(
+    x = "Position Group",
+    y = "Count"
+  )
+```
+
+### Choose-your-own mini task (pick ONE)
+
+1. Add data labels above the bars (hint: `geom_text(aes(label = n), ...)`) **OR**
+2. Change to descending order clearly (you might need `-n`) **OR**
+3. Show proportions instead of counts (create a `prop = n/sum(n)` column)
+
+I chose option 1, adding data labels above the bars.
+
+```{r col-choice}
+ggplot(position_counts, aes(x = reorder(PositionGrp, -n), y = n)) +
+  geom_col() +
+  geom_text(aes(label = n), vjust = -0.5) +
+  labs(
+    x = "Position Group",
+    y = "Count"
+  )
+```
+
+---
+
+## Checkpoint 3 (Two-variable bars + geom_col)
+
+**Checkpoint task:** Knit your document. If it works, **commit and push** with:
+
+> `worksheet-eda: checkpoint-3 (two-variable bars + geom_col)`
+
+---
+
+# Facets
+
+## Facet Wrap
+
+### Basic Histogram using `Weight`
+
+```{r hist-1}
+# Basic histogram
+ggplot(NFL, aes(x = Weight)) +
+  geom_histogram()
+```
+
+### Histogram with Fill using `PositionGrp` OR `Side`
+
+Choose ONE: `fill = PositionGrp` or `fill = Side`
+
+I chose `Side`.
+
+```{r hist-2}
+# Add fill
+ggplot(NFL, aes(x = Weight, fill = Side)) +
+  geom_histogram()
+```
+
+### Histogram using `facet_wrap()` with `PositionGrp`
+
+```{r hist-3}
+# facet_wrap by PositionGrp
+ggplot(NFL, aes(x = Weight)) +
+  geom_histogram() +
+  facet_wrap(~ PositionGrp)
+```
+
+### Histogram using `facet_grid()` with `Side`
+
+```{r hist-4}
+# facet_grid by Side
+ggplot(NFL, aes(x = Weight)) +
+  geom_histogram() +
+  facet_grid(Side ~ .)
+```
+
+### Quick interpretation (2–3 sentences)
+
+Pick one faceted plot and write what pattern you notice.
+
+**Answer:** In the faceted PositionGrp plot, player weights look different depending on their position group. Some groups tend to have heavier players while others have more players at lower weights. Separating the groups into their own plots makes these differences much easier to notice.
+
+---
+
+## Checkpoint 4 (Reorder + facets)
+
+**Checkpoint task:** Knit your document. If it works, **commit and push** with:
+
+> `worksheet-eda: checkpoint-4 (reorder + facets)`
+
+---
+
+# Reflection (Individual)
+
+Fill these in before you submit.
+
+1. **One thing I learned today:**
+
+I learned the difference between `geom_bar()` and `geom_col()`. `geom_bar()` can count observations automatically, while `geom_col()` uses values that have already been calculated.
+
+2. **One thing that confused me at first but makes sense now:**
+
+I was confused about why we needed to use `count()` before `geom_col()`, but now I understand that we have to create the bar heights ourselves first.
+
+3. **One ggplot trick I want to remember:**
+
+I want to remember that `reorder()` can arrange categories based on another variable, which makes barplots much easier to read.
+
+4. **Choose-your-own reflection (pick ONE):**
+
+* A. One plot I’m proud of and why
+* B. One plot I would redesign and how
+* C. One dataset question I’d investigate next
+
+I chose **A. One plot I’m proud of and why.**
+
+**Answer:** I’m most proud of the faceted histogram because it separates the position groups and makes them easier to compare. It showed me how the same variable can have different patterns depending on the group.
+
+---
+
+## Final Submission
+
+**Final task:** Knit one last time. Then **commit and push** with:
+
+> `worksheet-eda: final (reflection + cleanup)`
+
+---
+
+```{r}
+sessionInfo()
+```
